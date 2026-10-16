@@ -1,0 +1,1 @@
+Task photos reuse the project's Unsplash photos (see assets/photos/CREDITS.txt and assets/before-after/CREDITS.txt).

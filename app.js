@@ -37,6 +37,7 @@ const TRADE = {
   plast: { icon: 'trowel', tint: 'slate' }, alu: { icon: 'window', tint: 'blue' }, helper: { icon: 'hand', tint: 'orange' }
 };
 const tradeImg = id => TRADE[id] && id !== 'helper' ? `img/${id}.jpg` : 'img/cement.jpg';
+const taskImg = id => `img/tasks/${id}.jpg`;
 const UNITS = ['م²', 'نقطة', 'باب', 'ساعة', 'زيارة'];
 
 const REQ_STATUS = {
@@ -205,22 +206,25 @@ function cHome() {
     </header>
     <div id="qres" class="list" hidden></div>
     <div id="homeBody" class="home-body">
-      ${liveCard(mine)}
+      ${S.user ? liveCard(mine) : `<div class="join">
+        <div class="join-t"><b>أهلاً بيك في شطبلي 👋</b><small>اعمل حسابك في دقيقة، واطلب أي خدمة للبيت بسعر واضح.</small></div>
+        <div class="join-b"><button class="btn tape sm" type="button" data-action="open-auth" data-v="signup">اعمل حساب</button><button class="btn ghost sm" type="button" data-action="open-auth" data-v="login">عندي حساب</button></div>
+      </div>`}
       <div class="lanes">
         <button class="lane lane-main" type="button" data-action="tab" data-tab="services" style="--img:url(img/plumb.jpg)">
           <span class="lane-tag">${ic('bolt2')} سعر ثابت</span>
           <b>صلّح حاجة</b><small>حنفية، كهربا، كالون… وأقرب صنايعي متاح يوصلك</small>
         </button>
-        <button class="lane" type="button" data-action="open-helper"><span class="lane-ic tn-orange">${ic('hand')}</span><b>مساعد بالساعة</b><small>نقل عفش، ديكور، مناسبات</small></button>
-        <button class="lane" type="button" data-action="open-trades"><span class="lane-ic tn-sky">${ic('tool')}</span><b>صنايعي</b><small>بالتقييمات وآراء العملاء</small></button>
+        <button class="lane lane-photo" type="button" data-action="open-helper" style="--img:url(img/tasks/move.jpg)"><b>مساعد بالساعة</b><small>نقل عفش، ديكور، مناسبات</small></button>
+        <button class="lane lane-photo" type="button" data-action="open-trades" style="--img:url(img/elec.jpg)"><b>صنايعي</b><small>بالتقييمات وآراء العملاء</small></button>
       </div>
       ${pop.length ? `<div class="sec">
         <div class="sec-h"><h2 class="hd">${ic('flame')}الأكثر طلباً</h2><button class="link" type="button" data-action="tab" data-tab="services">الكل</button></div>
-        <div class="pops">${pop.map(x => `<button class="pop" type="button" data-action="open-q" data-id="${x.id}"><span class="pop-ic tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span><span><b>${esc(x.name)}</b><small>${money(x.price)}</small></span></button>`).join('')}</div>
+        <div class="pops">${pop.map(x => `<button class="pop" type="button" data-action="open-q" data-id="${x.id}"><span class="pop-ph"><img src="${tradeImg(x.category)}" alt="" loading="lazy"><span class="ph-ic tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span></span><span><b>${esc(x.name)}</b><small>${money(x.price)}</small></span></button>`).join('')}</div>
       </div>` : ''}
       ${S.tasks.length ? `<div class="sec">
         <div class="sec-h"><h2 class="hd">${ic('hand')}مساعد شطبلي</h2><button class="link" type="button" data-action="open-helper">الكل</button></div>
-        <div class="tasks-row">${S.tasks.map(t => `<button class="task" type="button" data-action="open-task" data-id="${t.id}"><span class="t-ic tn-${t.tint}">${ic(t.icon)}</span>${esc(t.name)}</button>`).join('')}</div>
+        <div class="tasks-row">${S.tasks.map(t => `<button class="tcard" type="button" data-action="open-task" data-id="${t.id}"><img src="${taskImg(t.id)}" alt="" loading="lazy"><span><b>${esc(t.name)}</b><small>من ${money(t.rate)} / ساعة</small></span></button>`).join('')}</div>
       </div>` : ''}
       <div class="sec">
         <div class="sec-h"><h2 class="hd">${ic('users')}صنايعية شطبلي</h2><button class="link" type="button" data-action="open-trades">الكل</button></div>
@@ -245,7 +249,7 @@ function cServices() {
   <div class="scroll">
     <div class="chips jump" role="group" aria-label="أقسام">${[['fix', 'إصلاحات'], ['help', 'مساعد'], ['trades', 'صنايعية']].map(([id, l]) => `<button class="chip" type="button" data-action="jump" data-v="${id}">${ic(SVC[id])}${l}</button>`).join('')}</div>
     ${sec('fix', 'إصلاحات بسعر ثابت', 'بتعرف السعر قبل ما تطلب، وأقرب صنايعي متاح بيوصلك.', `<div class="card qlist">${S.quick.map(x => `<button type="button" class="qrow" data-action="open-q" data-id="${x.id}"><span class="pop-ic sm tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(cat(x.category).name)} · ${esc(x.duration)} تقريباً</small></span><span class="qp">${money(x.price)}</span></button>`).join('')}</div>`)}
-    ${sec('help', 'مساعد بالساعة', 'إيد زيادة لأي حاجة في البيت.', `<div class="tasks">${S.tasks.map(t => `<button class="task" type="button" data-action="open-task" data-id="${t.id}"><span class="t-ic tn-${t.tint}">${ic(t.icon)}</span>${esc(t.name)}</button>`).join('')}</div>`)}
+    ${sec('help', 'مساعد بالساعة', 'إيد زيادة لأي حاجة في البيت.', `<div class="tgrid">${S.tasks.map(t => `<button class="tcard" type="button" data-action="open-task" data-id="${t.id}"><img src="${taskImg(t.id)}" alt="" loading="lazy"><span><b>${esc(t.name)}</b><small>من ${money(t.rate)} / ساعة</small></span></button>`).join('')}</div>`)}
     ${sec('trades', 'صنايعية', 'قارن التقييمات والأسعار، واطلب معاينة.', tradeGrid())}
   </div>`;
 }
@@ -297,7 +301,7 @@ function cHelper() {
   <div class="scroll">
     <div class="qhero">${ic('hand')}<div><b>إيد زيادة لأي حاجة في البيت</b><small>بتختار المهمة وعدد المساعدين والساعات، والسعر بيبان قدامك قبل ما تطلب.</small></div></div>
     <div class="list">${S.tasks.map(t => `<button class="card trow" type="button" data-action="open-task" data-id="${t.id}">
-      <span class="t-ic tn-${t.tint}">${ic(t.icon)}</span>
+      <img class="trow-ph" src="${taskImg(t.id)}" alt="" loading="lazy">
       <span class="meta"><b>${esc(t.name)}</b><small>${esc(t.description)}</small></span>
       <span class="price">من<b>${money(t.rate)}</b>/ ساعة</span></button>`).join('')}</div>
     <p class="note">السعر لكل مساعد في الساعة، وأقل مدة ساعتين.</p>
@@ -325,7 +329,7 @@ function requestSheet(id) {
 function quickSheet(id) {
   const x = quickById(id); if (!x) return '';
   return sheetWrap('quickForm', `
-    <div class="qs-head"><span class="t-ic big tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span><div><h2>${esc(x.name)}</h2><small class="muted">${esc(cat(x.category).name)} · ${esc(x.duration)} تقريباً</small></div></div>
+    <div class="qs-head"><img src="${tradeImg(x.category)}" alt=""><div><h2>${esc(x.name)}</h2><small class="muted">${esc(cat(x.category).name)} · ${esc(x.duration)} تقريباً</small></div></div>
     <div class="qs-price"><span>سعر ثابت</span><b>${money(x.price)}</b></div>
     <p class="muted small" style="margin:0">شطبلي هتبعتلك أعلى صنايعي تقييماً ومتاح في القسم ده.</p>
     <label class="field">إمتى؟<select id="q-when"><option>في أقرب وقت (خلال ساعتين)</option><option>النهارده بالليل</option><option>بكرة الصبح</option></select></label>
@@ -339,7 +343,7 @@ function helperSheet(id) {
   const d = S.ui.draft && S.ui.draft.task === id ? S.ui.draft : (S.ui.draft = { task: id, count: t.def_helpers, hours: t.def_hours, note: '' });
   const total = t.rate * d.count * d.hours;
   return sheetWrap('helperForm', `
-    <div class="qs-head"><span class="t-ic big tn-${t.tint}">${ic(t.icon)}</span><div><h2>${esc(t.name)}</h2><small class="muted">${esc(t.description)}</small></div></div>
+    <div class="qs-head"><img src="${taskImg(t.id)}" alt=""><div><h2>${esc(t.name)}</h2><small class="muted">${esc(t.description)}</small></div></div>
     <div class="grid2">
       <div class="cstep"><span>عدد المساعدين</span><div class="stepper"><button type="button" data-action="h-step" data-k="count" data-d="1" aria-label="زوّد">+</button><span class="q">${n(d.count)}</span><button type="button" data-action="h-step" data-k="count" data-d="-1" aria-label="قلّل">−</button></div></div>
       <div class="cstep"><span>عدد الساعات</span><div class="stepper"><button type="button" data-action="h-step" data-k="hours" data-d="1" aria-label="زوّد">+</button><span class="q">${n(d.hours)}</span><button type="button" data-action="h-step" data-k="hours" data-d="-1" aria-label="قلّل">−</button></div></div>
@@ -459,7 +463,7 @@ function jobCard(r) {
     <div class="top"><b>${esc(p?.full_name || 'عميل')}</b>${pill(r.status)}</div>
     <p>${esc(r.description)}</p>${facts(r)}
     ${r.price ? `<div class="small"><b>${money(r.price)}</b> ${r.kind === 'helper' ? 'مساعد بالساعة' : 'سعر ثابت'} · عمولة شطبلي ${money(Math.round(r.price * COMMISSION))}</div>` : ''}
-    ${p?.phone && r.status !== 'rejected' && r.status !== 'cancelled' ? `<div class="phone-row"><span>${ic('phone')} رقم العميل</span><a href="tel:${esc(p.phone)}">${esc(p.phone)}</a></div>` : ''}
+    ${p?.phone && ['accepted', 'done'].includes(r.status) ? `<div class="phone-row"><span>${ic('phone')} رقم العميل</span><a href="tel:${esc(p.phone)}">${esc(p.phone)}</a></div>` : ''}
     ${r.status === 'pending' ? `<div class="row"><button class="btn sm" type="button" data-action="job-status" data-id="${r.id}" data-v="accepted">اقبل</button><button class="btn ghost sm" type="button" data-action="job-status" data-id="${r.id}" data-v="rejected">اعتذر</button></div>` : ''}
     ${r.status === 'accepted' ? `<button class="btn sm tape" type="button" data-action="job-status" data-id="${r.id}" data-v="done">${ic('check')} خلّصت الشغل</button>` : ''}
     ${r.status === 'done' ? `<div class="small muted">${rv ? `تقييم العميل: <span class="stars">${stars(rv.stars)}</span>${rv.comment ? ` · ${esc(rv.comment)}` : ''}` : 'في انتظار تقييم العميل'}</div>` : ''}
@@ -554,7 +558,7 @@ function screen() {
       const list = S.cache['req:jobs'];
       const pend = Array.isArray(list) ? list.filter(r => r.status === 'pending').length : 0;
       return {
-        html: ({ home: wIncoming, jobs: wJobs, account: wAccount }[S.ui.tab] || wIncoming)(),
+        html: ({ home: wIncoming, jobs: wJobs, account: wAccount }[S.ui.tab] || (S.ui.tab = 'home', wIncoming))(),
         tabs: [{ id: 'home', label: 'الطلبات', icon: 'inbox', badge: pend }, { id: 'jobs', label: 'شغلي', icon: 'tool' }, { id: 'account', label: 'حسابي', icon: 'user' }]
       };
     }
@@ -621,7 +625,7 @@ document.addEventListener('click', async e => {
     case 'open-crafter': S.ui.stack.push({ name: 'crafter', id }); return go({});
     case 'open-trades': S.ui.stack.push({ name: 'trades' }); return go({});
     case 'open-helper': S.ui.stack.push({ name: 'helper' }); return go({});
-    case 'open-auth': S.ui.stack.push({ name: 'auth' }); return go({});
+    case 'open-auth': S.ui.stack.push({ name: 'auth' }); return go({ auth: el.dataset.v === 'signup' ? 'signup' : S.ui.auth });
     case 'jump': { const t = document.getElementById('svc-' + el.dataset.v); if (t) t.scrollIntoView({ block: 'start' }); return; }
     case 'seg': return go({ seg: el.dataset.v }, true);
     case 'aseg': return go({ aseg: el.dataset.v }, true);
