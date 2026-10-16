@@ -1,7 +1,7 @@
 // Offline shell for Shatabli. Only caches this site's own files;
 // Supabase data always comes fresh from the network.
-const CACHE = 'shatabli-app-v3';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.css', 'config.js', 'icons.js', 'app.js', 'manifest.webmanifest',
+const CACHE = 'shatabli-app-v4';
+const SHELL = ['./', 'index.html', 'styles.css', 'app.css', 'config.js', 'icons.js', 'legal.js', 'app.js', 'manifest.webmanifest',
   'img/logo.jpg', 'img/logo-full.jpg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-180.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

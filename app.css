@@ -71,3 +71,8 @@
 .tgrid .tcard { width: auto; }
 .trow-ph { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; flex: none; }
 .qs-head img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; flex: none; }
+.legal section { display: flex; flex-direction: column; gap: 4px; }
+.legal h2 { font-size: 15px; }
+.legal p { margin: 0; font-size: 14px; line-height: 1.9; color: var(--muted); }
+.legal-links { display: flex; justify-content: center; gap: 6px; align-items: center; }
+.captcha { min-height: 66px; display: flex; justify-content: center; }

@@ -127,6 +127,7 @@ async function loadSession(session) {
       }
     } catch (e) { toast('مشكلة في تحميل حسابك: ' + e.message); }
   }
+  subscribeLive();
   render();
 }
 const role = () => (S.profile ? S.profile.role : 'guest');
@@ -175,12 +176,25 @@ function authScreen() {
         <label class="field">المنطقة<input id="a-area" maxlength="60" value="${PILOT_AREA}"></label>` : ''}
       <label class="field">الإيميل<input id="a-email" type="email" autocomplete="email" required dir="ltr"></label>
       <label class="field">كلمة السر<input id="a-pass" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" required minlength="8" dir="ltr"></label>
+      ${window.SHATABLI.captchaSiteKey ? '<div class="captcha" id="captcha"></div>' : ''}
       <div class="err" id="a-err" role="alert"></div>
       <button class="btn block" type="submit">${signup ? 'اعمل الحساب' : 'دخول'}</button>
-      ${signup ? '<p class="center-note">كلمة السر ٨ حروف على الأقل.</p>' : ''}
+      ${signup ? '<p class="center-note">كلمة السر ٨ حروف على الأقل. بإنك تعمل حساب، إنت موافق على:</p>' : ''}
+      ${legalLinks}
     </form>
   </div>`;
 }
+
+/* ---------- privacy & terms ---------- */
+function legalScreen(id) {
+  const L = window.LEGAL, d = L && L[id];
+  if (!d) return `${topbar('')}<div class="scroll"><div class="empty">الصفحة دي مش موجودة.</div></div>`;
+  return `${topbar(esc(d.title))}<div class="scroll legal">
+    <p class="muted small">آخر تحديث: ${esc(L.updated)}</p>
+    ${d.sections.map(([h, p], i) => `<section><h2>${esc(h)}</h2><p>${esc(p)}${i === d.sections.length - 1 ? `<span dir="ltr">${esc(L.contact)}</span>` : ''}</p></section>`).join('')}
+  </div>`;
+}
+const legalLinks = `<p class="center-note legal-links"><button class="link" type="button" data-action="open-legal" data-id="terms">شروط الاستخدام</button> · <button class="link" type="button" data-action="open-legal" data-id="privacy">سياسة الخصوصية</button></p>`;
 
 /* ---------- customer: home ---------- */
 function liveCard(list) {
@@ -411,7 +425,7 @@ function profileForm() {
     </form>`;
 }
 function cAccount() {
-  if (!S.user) return `${topbar('حسابي')}<div class="scroll">${needLogin('سجّل دخول عشان تطلب خدمات وتتابعها.')}</div>`;
+  if (!S.user) return `${topbar('حسابي')}<div class="scroll">${needLogin('سجّل دخول عشان تطلب خدمات وتتابعها.')}${legalLinks}</div>`;
   const p = S.profile || { full_name: '', phone: '', area: '' };
   return `${topbar('حسابي')}<div class="scroll">
     <div class="me"><span class="me-av">${initials(p.full_name || S.user.email)}</span><div><b>${esc(p.full_name || 'حسابي')}</b><small dir="ltr" style="text-align:end">${esc(S.user.email)}</small></div></div>
@@ -420,7 +434,8 @@ function cAccount() {
     ${role() === 'customer' ? `<div class="sec"><h2 class="hd">${ic('gift')}اشتغل مع شطبلي</h2>
       <div class="card menu"><button type="button" data-action="become-worker"><span><i class="mi-w tn-orange">${ic('tool', 'i mi')}</i> أنا صنايعي أو مساعد</span><b>${ic('back', 'i chev')}</b></button></div></div>` : ''}
     <button class="btn ghost block" type="button" data-action="sign-out">تسجيل خروج</button>
-    <p class="note">شطبلي · نسخة تجريبية للتجمع والقاهرة الجديدة</p>
+    ${legalLinks}
+    <p class="note">عايز تمسح حسابك؟ ابعتلنا من الإيميل المسجّل على <span dir="ltr">${esc(window.LEGAL?.contact || '')}</span></p>
   </div>`;
 }
 
@@ -554,6 +569,7 @@ const app = document.getElementById('app');
 function screen() {
   const top = S.ui.stack[S.ui.stack.length - 1];
   if (top?.name === 'auth') return { html: authScreen(), tabs: null };
+  if (top?.name === 'legal') return { html: legalScreen(top.id), tabs: null };
   if (isWorker()) {
     if (S.card === null) return { html: wOnboard(), tabs: null };
     if (S.card && S.card.status !== 'approved') return { html: wWaiting(), tabs: null };
@@ -590,6 +606,7 @@ function render(keepScroll) {
   if (keepScroll) app.querySelectorAll('input[id],textarea[id],select[id]').forEach(el => { typed[el.id] = el.value; });
   const { html, tabs } = screen();
   app.innerHTML = `${html}${tabs ? tabbar(tabs) : ''}${sheetHtml()}<div class="toast" id="toast" data-show="false" role="status"></div>`;
+  mountCaptcha();
   if (keepScroll) {
     for (const [id, v] of Object.entries(typed)) { const el = document.getElementById(id); if (el && id !== 'q') el.value = v; }
     const sc2 = app.querySelector('.scroll'); if (sc2) sc2.scrollTop = y;
@@ -614,6 +631,51 @@ const errMsg = e => {
   return m;
 };
 
+/* ---------- CAPTCHA ---------- */
+let captchaToken = null, captchaWidget = null, captchaLoading = false;
+function mountCaptcha() {
+  const key = window.SHATABLI.captchaSiteKey, box = document.getElementById('captcha');
+  if (!key || !box || box.childElementCount) return;
+  if (!window.turnstile) {
+    if (!captchaLoading) {
+      captchaLoading = true;
+      const sc = document.createElement('script');
+      sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      sc.async = true; sc.onload = () => mountCaptcha();
+      document.head.appendChild(sc);
+    }
+    return;
+  }
+  captchaToken = null;
+  captchaWidget = window.turnstile.render(box, {
+    sitekey: key, language: 'ar',
+    callback: t => { captchaToken = t; },
+    'expired-callback': () => { captchaToken = null; }
+  });
+}
+function resetCaptcha() { captchaToken = null; if (window.turnstile && captchaWidget !== null) { try { window.turnstile.reset(captchaWidget); } catch (e) { /* widget gone */ } } }
+
+/* ---------- live updates (Supabase Realtime) ---------- */
+let liveChannel = null;
+function subscribeLive() {
+  if (liveChannel) { sb.removeChannel(liveChannel); liveChannel = null; }
+  if (!S.user || !S.profile) return;
+  const worker = isWorker(), admin = role() === 'admin';
+  const filter = admin ? undefined : worker ? `craftsman_id=eq.${S.user.id}` : `customer_id=eq.${S.user.id}`;
+  liveChannel = sb.channel('requests-' + S.user.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'requests', ...(filter ? { filter } : {}) }, payload => {
+      invalidate('req:', 'admin:requests');
+      render(true);
+      const nw = payload.new || {}, old = payload.old || {};
+      if (worker && payload.eventType === 'INSERT') toast('وصلك طلب جديد!');
+      else if (!worker && !admin && payload.eventType === 'UPDATE' && nw.status !== old.status) {
+        const msg = { accepted: 'الصنايعي قبل طلبك. رقمه ظاهر في الطلب.', rejected: 'الصنايعي اعتذر عن طلبك.', done: 'الشغل خلص. متنساش تقيّم!' }[nw.status];
+        if (msg) toast(msg);
+      }
+    })
+    .subscribe();
+}
+
 /* ---------- events ---------- */
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-action]'); if (!el) return;
@@ -629,6 +691,7 @@ document.addEventListener('click', async e => {
     case 'open-crafter': S.ui.stack.push({ name: 'crafter', id }); return go({});
     case 'open-trades': S.ui.stack.push({ name: 'trades' }); return go({});
     case 'open-helper': S.ui.stack.push({ name: 'helper' }); return go({});
+    case 'open-legal': S.ui.stack.push({ name: 'legal', id: el.dataset.id }); return go({});
     case 'open-auth': S.ui.stack.push({ name: 'auth' }); return go({ auth: el.dataset.v === 'signup' ? 'signup' : S.ui.auth });
     case 'jump': { const t = document.getElementById('svc-' + el.dataset.v); if (t) t.scrollIntoView({ block: 'start' }); return; }
     case 'seg': return go({ seg: el.dataset.v }, true);
@@ -690,16 +753,19 @@ document.addEventListener('submit', async e => {
       const email = val('#a-email'), password = f.querySelector('#a-pass').value;
       if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'اكتب إيميل صحيح.'; return; }
       if (password.length < 8) { err.textContent = 'كلمة السر لازم تكون ٨ حروف على الأقل.'; return; }
+      const needCaptcha = !!window.SHATABLI.captchaSiteKey;
+      if (needCaptcha && !captchaToken) { err.textContent = 'كمّل خطوة «أنا مش روبوت» الأول.'; return; }
+      const captcha = needCaptcha ? { captchaToken } : {};
       busy(btn, true);
       if (S.ui.auth === 'signup') {
         const full_name = val('#a-name'), phone = digits(val('#a-phone')).replace(/[^\d+]/g, ''), area = val('#a-area');
         if (full_name.length < 3) { busy(btn, false); err.textContent = 'اكتب اسمك بالكامل.'; return; }
         if (phone.length < 10) { busy(btn, false); err.textContent = 'اكتب رقم موبايل صحيح.'; return; }
-        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { role: S.ui.signRole, full_name, phone, area } } });
+        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { role: S.ui.signRole, full_name, phone, area }, ...captcha } });
         if (error) throw error;
         if (!data.session) { busy(btn, false); err.textContent = 'اتعمل الحساب. افتح الإيميل اللي وصلك وأكّده، وبعدين سجّل دخول.'; return; }
       } else {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
+        const { error } = await sb.auth.signInWithPassword({ email, password, options: captcha });
         if (error) throw error;
       }
       S.ui.stack = S.ui.stack.filter(s => s.name !== 'auth');
@@ -755,6 +821,7 @@ document.addEventListener('submit', async e => {
     }
   } catch (err) {
     busy(btn, false);
+    if (f.id === 'authForm') resetCaptcha();
     const box = f.querySelector('.err');
     if (box) box.textContent = errMsg(err); else toast(errMsg(err));
   }
@@ -785,7 +852,7 @@ setInterval(() => {
   const busyTyping = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if (busyTyping) return;
   invalidate('req:'); render(true);
-}, 30000);
+}, 60000);
 
 /* ---------- boot ---------- */
 (async function boot() {
