@@ -76,7 +76,8 @@ s, b = call("PATCH", "/rest/v1/quick_services?id=eq.1", {"price": 1})
 check("cannot change prices", denied(s, b), s)
 for fn, args in (("book_quick_service", {"p_service_id": 1, "p_address": "abc", "p_day": "x"}),
                  ("book_helper", {"p_task": "move", "p_helpers": 1, "p_hours": 2, "p_address": "abc", "p_day": "x"}),
-                 ("admin_set_craftsman_status", {"p_id": "00000000-0000-0000-0000-000000000000", "p_status": "approved"})):
+                 ("admin_set_craftsman_status", {"p_id": "00000000-0000-0000-0000-000000000000", "p_status": "approved"}),
+                 ("set_my_photo", {"p_path": "x/y.jpg"})):
     s, b = call("POST", f"/rest/v1/rpc/{fn}", args)
     check(f"cannot call {fn}", s >= 400, s)
 s, b = call("POST", "/rest/v1/rpc/is_admin", {})
@@ -109,6 +110,10 @@ if all(A) and all(B):
     check("cannot approve or rate yourself", s >= 400 or not b or all(r.get("status") != "approved" or r.get("rating_avg") != 5 for r in b), b)
     s, b = call("POST", "/rest/v1/rpc/admin_set_craftsman_status", {"p_id": ida, "p_status": "approved"}, ta)
     check("non-admin cannot approve craftsmen", s >= 400, s)
+    s, b = call("PATCH", "/rest/v1/quick_services?id=eq.1", {"price": 1}, ta)
+    check("non-admin cannot change prices", denied(s, b), s)
+    s, b = call("POST", "/rest/v1/rpc/set_my_photo", {"p_path": idb + "/aaaaaaaaaa.jpg"}, ta)
+    check("cannot point your photo at another user's file", s >= 400, s)
     s, b = call("PATCH", "/rest/v1/profiles?id=eq." + ida, {"phone": "<script>"}, ta)
     check("phone must be digits", s >= 400, s)
 else:

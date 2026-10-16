@@ -19,8 +19,10 @@ const digits = v => String(v ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨
 const initials = name => esc(String(name || '؟').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join(' '));
 const AVC = ['#F5D88A', '#B9DCE4', '#C9E3C2', '#F2C4B5', '#D6CCF0', '#F0D0E2', '#CFE0F5', '#E8DDB5'];
 const avColor = id => AVC[[...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
-const avatar = c => c.photo_url
-  ? `<img class="av" src="${esc(c.photo_url)}" alt="${esc(c.name)}">`
+const PHOTO_PATH = /^[0-9a-f-]{36}\/[a-z0-9]{8,40}\.(jpg|png|webp)$/;
+const photoUrl = p => PHOTO_PATH.test(p || '') ? `${window.SHATABLI.url}/storage/v1/object/public/avatars/${p}` : '';
+const avatar = c => photoUrl(c.photo_url)
+  ? `<img class="av" src="${photoUrl(c.photo_url)}" alt="${esc(c.name)}" loading="lazy">`
   : `<div class="av" style="background:${avColor(c.id)}">${initials(c.name)}</div>`;
 const ago = iso => {
   const m = Math.round((Date.now() - new Date(iso)) / 60000);
@@ -456,6 +458,11 @@ function cardForm(c) {
     <button class="btn block" type="submit">${c ? 'احفظ التعديلات' : 'ابعت بياناتك للمراجعة'}</button>
   </form>`;
 }
+function photoBox() {
+  return `<div class="card photo-box">${avatar(S.card)}<div><b>صورتك الشخصية</b><small>العملاء بيثقوا أكتر في الصنايعي اللي ليه صورة واضحة.</small>
+    <label class="btn sm ghost" for="c-photo">${ic('frame')} ${S.card.photo_url ? 'غيّر الصورة' : 'ارفع صورة'}</label>
+    <input id="c-photo" type="file" accept="image/jpeg,image/png,image/webp" hidden></div></div>`;
+}
 function wOnboard() {
   return `${topbar('اشتغل مع شطبلي')}<div class="scroll">
     <div class="qhero">${ic('tool')}<div><b>أهلاً بيك في شطبلي</b><small>اكتب بياناتك، وفريق شطبلي هيراجعها ويكلّمك. بعد الموافقة هتظهر للعملاء وتبدأ توصلك طلبات.</small></div></div>
@@ -470,6 +477,7 @@ function wWaiting() {
       <h2>${st === 'suspended' ? 'حسابك متوقف مؤقتاً' : 'بياناتك تحت المراجعة'}</h2>
       <p>${st === 'suspended' ? 'كلّم فريق شطبلي عشان نعرف حصل إيه.' : 'فريق شطبلي هيراجع بياناتك ويكلّمك على رقمك. بعد الموافقة هتظهر للعملاء.'}</p>
     </div>
+    ${photoBox()}
     <div class="sec"><h2 class="hd">${ic('user')}بياناتك</h2>${cardForm(S.card)}</div>
     <button class="btn ghost block" type="button" data-action="sign-out">تسجيل خروج</button>
   </div>`;
@@ -516,6 +524,7 @@ function wAccount() {
       <div class="stat"><b>${n(Math.round(earned * (1 - COMMISSION)))}</b><span>ج.م صافي (خدمات ثابتة)</span></div>
     </div>
     <div class="card toggle"><div><b>متاح لطلبات جديدة</b><div class="small muted">لو قفلتها مش هتوصلك طلبات</div></div><button class="switch" type="button" role="switch" aria-checked="${c.available}" aria-label="متاح" data-action="toggle-avail"></button></div>
+    ${photoBox()}
     <div class="sec"><h2 class="hd">${ic('user')}بياناتك للعملاء</h2>${cardForm(c)}</div>
     <div class="sec"><h2 class="hd">${ic('phone')}بيانات التواصل</h2>${S.profile ? profileForm() : ''}</div>
     <button class="btn ghost block" type="button" data-action="sign-out">تسجيل خروج</button>
@@ -544,6 +553,12 @@ function aPanel() {
         <div class="row">${c.status !== 'approved' ? `<button class="btn sm" type="button" data-action="admin-status" data-id="${c.id}" data-v="approved">${ic('check')} وافق</button>` : ''}${c.status !== 'suspended' ? `<button class="btn sm danger" type="button" data-action="admin-status" data-id="${c.id}" data-v="suspended">وقّف</button>` : ''}</div>
       </div>`).join('')}</div>` : '<div class="empty">لسه مفيش صنايعية سجّلوا.</div>';
     })();
+  } else if (seg === 'prices') {
+    body = `<p class="note" style="margin:0;text-align:start">الأسعار دي اللي العميل بيشوفها ويدفعها. اقفل الخدمة لو مش متاحة مؤقتاً.</p>
+      <h2 class="hd">${ic('bolt2')}إصلاحات بسعر ثابت</h2>
+      <div class="list">${(S.adminQuick || S.quick).map(x => priceRow('quick', x.id, x.name, x.price, x.active)).join('')}</div>
+      <h2 class="hd">${ic('hand')}مساعد (سعر الساعة)</h2>
+      <div class="list">${(S.adminTasks || S.tasks).map(t => priceRow('task', t.id, t.name, t.rate, t.active)).join('')}</div>`;
   } else {
     const list = adminRequests();
     body = list === undefined ? loading() : failed(list) || (() => {
@@ -560,8 +575,24 @@ function aPanel() {
     })();
   }
   return `${topbar('لوحة الإدارة', refreshBtn)}<div class="scroll">
-    <div class="seg lv" role="group"><button type="button" data-action="aseg" data-v="crafters" aria-pressed="${seg === 'crafters'}">الصنايعية</button><button type="button" data-action="aseg" data-v="requests" aria-pressed="${seg === 'requests'}">الطلبات</button></div>
+    <div class="seg lv" role="group"><button type="button" data-action="aseg" data-v="crafters" aria-pressed="${seg === 'crafters'}">الصنايعية</button><button type="button" data-action="aseg" data-v="requests" aria-pressed="${seg === 'requests'}">الطلبات</button><button type="button" data-action="aseg" data-v="prices" aria-pressed="${seg === 'prices'}">الأسعار</button></div>
     ${body}</div>`;
+}
+
+const priceRow = (kind, id, name, price, active) => `<form class="card price-row" data-kind="${kind}" data-id="${esc(id)}" novalidate>
+  <span class="pr-name"><b>${esc(name)}</b><label class="pr-on"><input type="checkbox" ${active ? 'checked' : ''} name="active"> متاحة</label></span>
+  <input name="price" inputmode="numeric" value="${n(price).replace(/٬/g, '')}" aria-label="السعر">
+  <button class="btn sm" type="submit">احفظ</button></form>`;
+async function loadAdminCatalog() {
+  S.adminQuick = await q(sb.from('quick_services').select('*').order('sort'));
+  S.adminTasks = await q(sb.from('helper_tasks').select('*').order('sort'));
+}
+async function loadCatalog() {
+  const [quick, tasks] = await Promise.all([
+    q(sb.from('quick_services').select('*').eq('active', true).order('sort')),
+    q(sb.from('helper_tasks').select('*').eq('active', true).order('sort')).catch(() => [])
+  ]);
+  S.quick = quick; S.tasks = tasks;
 }
 
 /* ---------- render ---------- */
@@ -695,7 +726,9 @@ document.addEventListener('click', async e => {
     case 'open-auth': S.ui.stack.push({ name: 'auth' }); return go({ auth: el.dataset.v === 'signup' ? 'signup' : S.ui.auth });
     case 'jump': { const t = document.getElementById('svc-' + el.dataset.v); if (t) t.scrollIntoView({ block: 'start' }); return; }
     case 'seg': return go({ seg: el.dataset.v }, true);
-    case 'aseg': return go({ aseg: el.dataset.v }, true);
+    case 'aseg':
+      if (el.dataset.v === 'prices') { try { await loadAdminCatalog(); } catch (err) { toast(errMsg(err)); } }
+      return go({ aseg: el.dataset.v }, true);
     case 'auth-mode': return go({ auth: el.dataset.v }, true);
     case 'sign-role': return go({ signRole: el.dataset.v }, true);
     case 'open-request': if (!requireLogin()) return; return go({ sheet: 'req:' + id }, true);
@@ -800,6 +833,16 @@ document.addEventListener('submit', async e => {
       invalidate('req:', 'reviews:', 'crafter'); go({ sheet: null }, true);
       return toast('شكراً! تقييمك بيساعد غيرك يختار صح.');
     }
+    if (f.classList.contains('price-row')) {
+      const v = parseInt(digits(f.elements.price.value), 10), on = f.elements.active.checked;
+      if (!(v >= 10)) return toast('اكتب سعر صحيح بالأرقام.');
+      busy(btn, true);
+      const id = f.dataset.id;
+      if (f.dataset.kind === 'quick') await q(sb.from('quick_services').update({ price: v, active: on }).eq('id', Number(id)).select());
+      else await q(sb.from('helper_tasks').update({ rate: v, active: on }).eq('id', id).select());
+      await Promise.all([loadAdminCatalog(), loadCatalog()]);
+      render(true); return toast('السعر اتحفظ، والعملاء هيشوفوه على طول.');
+    }
     if (f.id === 'profileForm') {
       busy(btn, true);
       S.profile = await q(sb.from('profiles').update({ full_name: val('#p-name'), phone: digits(val('#p-phone')).replace(/[^\d+]/g, ''), area: val('#p-area') }).eq('id', S.user.id).select().single());
@@ -825,6 +868,30 @@ document.addEventListener('submit', async e => {
     const box = f.querySelector('.err');
     if (box) box.textContent = errMsg(err); else toast(errMsg(err));
   }
+});
+
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'c-photo' || !e.target.files.length) return;
+  const file = e.target.files[0];
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast('الصورة لازم تكون JPG أو PNG أو WEBP.');
+  if (file.size > 10 * 1024 * 1024) return toast('الصورة كبيرة أوي. اختار صورة أصغر من ١٠ ميجا.');
+  toast('بنرفع الصورة…');
+  try {
+    // Re-draw on a canvas: shrinks to 512px, converts to JPEG and drops hidden metadata (location etc.).
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 512 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+    const name = Array.from(crypto.getRandomValues(new Uint8Array(10)), b => b.toString(16).padStart(2, '0')).join('');
+    const path = `${S.user.id}/${name}.jpg`, old = S.card.photo_url;
+    const up = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (up.error) throw up.error;
+    await q(sb.rpc('set_my_photo', { p_path: path }));
+    if (PHOTO_PATH.test(old || '')) sb.storage.from('avatars').remove([old]).catch(() => {});
+    S.card = await q(sb.from('craftsmen').select('*').eq('id', S.user.id).maybeSingle());
+    invalidate('crafter'); render(true); toast('صورتك اتحدّثت.');
+  } catch (err) { toast(errMsg(err)); }
 });
 
 document.addEventListener('input', e => {
@@ -857,12 +924,8 @@ setInterval(() => {
 /* ---------- boot ---------- */
 (async function boot() {
   try {
-    const [cats, quick, tasks] = await Promise.all([
-      q(sb.from('categories').select('*').order('sort')),
-      q(sb.from('quick_services').select('*').eq('active', true).order('sort')),
-      q(sb.from('helper_tasks').select('*').eq('active', true).order('sort')).catch(() => [])
-    ]);
-    S.cats = cats; S.quick = quick; S.tasks = tasks;
+    const [cats] = await Promise.all([q(sb.from('categories').select('*').order('sort')), loadCatalog()]);
+    S.cats = cats;
   } catch (e) {
     app.innerHTML = `<div class="scroll"><div class="empty" style="margin-top:40px">مش قادرين نوصل لشطبلي دلوقتي.<br>اتأكد من النت وجرّب تاني.<br><button class="btn sm" type="button" data-action="reload" style="margin-top:10px">جرّب تاني</button></div></div>`;
     return;
