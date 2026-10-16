@@ -37,13 +37,16 @@ const TRADE = {
   plast: { icon: 'trowel', tint: 'slate' }, alu: { icon: 'window', tint: 'blue' }, helper: { icon: 'hand', tint: 'orange' }
 };
 const tradeImg = id => TRADE[id] && id !== 'helper' ? `img/${id}.jpg` : 'img/cement.jpg';
-const taskImg = id => `img/tasks/${id}.jpg`;
+const icSafe = (name, c) => ic(typeof P[name] === 'string' ? name : 'tool', c);
+const taskImg = id => /^[a-z]{2,20}$/.test(id) ? `img/tasks/${id}.jpg` : 'img/cement.jpg';
 const UNITS = ['م²', 'نقطة', 'باب', 'ساعة', 'زيارة'];
 
 const REQ_STATUS = {
   pending: ['wait', 'في انتظار الرد'], accepted: ['go', 'متفق عليه'], done: ['ok', 'تم الشغل'],
   rejected: ['bad', 'اعتذر'], cancelled: ['bad', 'اتلغى']
 };
+const TINTS = ['rose', 'amber', 'sky', 'orange', 'teal', 'violet', 'slate', 'blue', 'green'];
+const tint = v => TINTS.includes(v) ? v : 'blue';
 const PILL_IC = { wait: 'wait', go: 'loader', ok: 'okc', bad: 'badc' };
 const pill = s => `<span class="pill ${REQ_STATUS[s][0]}">${ic(PILL_IC[REQ_STATUS[s][0]])}${REQ_STATUS[s][1]}</span>`;
 const ACTIVE = ['pending', 'accepted'];
@@ -136,7 +139,7 @@ function topbar(title, right = '') {
 }
 const refreshBtn = `<button class="iconbtn" type="button" data-action="refresh" aria-label="تحديث">${ic('loader')}</button>`;
 function tabbar(tabs) {
-  return `<nav class="tabbar">${tabs.map(t => `<button type="button" data-action="tab" data-tab="${t.id}" ${S.ui.tab === t.id && !S.ui.stack.length ? 'aria-current="page"' : ''}>${ic(t.icon)}${t.label}${t.badge ? `<span class="badge">${n(t.badge)}</span>` : ''}</button>`).join('')}</nav>`;
+  return `<nav class="tabbar">${tabs.map(t => `<button type="button" data-action="tab" data-tab="${t.id}" ${S.ui.tab === t.id && !S.ui.stack.length ? 'aria-current="page"' : ''}>${icSafe(t.icon)}${t.label}${t.badge ? `<span class="badge">${n(t.badge)}</span>` : ''}</button>`).join('')}</nav>`;
 }
 const stars = k => '★'.repeat(k) + '☆'.repeat(5 - k);
 function proCard(c) {
@@ -220,7 +223,7 @@ function cHome() {
       </div>
       ${pop.length ? `<div class="sec">
         <div class="sec-h"><h2 class="hd">${ic('flame')}الأكثر طلباً</h2><button class="link" type="button" data-action="tab" data-tab="services">الكل</button></div>
-        <div class="pops">${pop.map(x => `<button class="pop" type="button" data-action="open-q" data-id="${x.id}"><span class="pop-ph"><img src="${tradeImg(x.category)}" alt="" loading="lazy"><span class="ph-ic tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span></span><span><b>${esc(x.name)}</b><small>${money(x.price)}</small></span></button>`).join('')}</div>
+        <div class="pops">${pop.map(x => `<button class="pop" type="button" data-action="open-q" data-id="${x.id}"><span class="pop-ph"><img src="${tradeImg(x.category)}" alt="" loading="lazy"><span class="ph-ic tn-${TRADE[x.category]?.tint || 'blue'}">${icSafe(x.icon)}</span></span><span><b>${esc(x.name)}</b><small>${money(x.price)}</small></span></button>`).join('')}</div>
       </div>` : ''}
       ${S.tasks.length ? `<div class="sec">
         <div class="sec-h"><h2 class="hd">${ic('hand')}مساعد شطبلي</h2><button class="link" type="button" data-action="open-helper">الكل</button></div>
@@ -248,7 +251,7 @@ function cServices() {
   return `${topbar('كل الخدمات')}
   <div class="scroll">
     <div class="chips jump" role="group" aria-label="أقسام">${[['fix', 'إصلاحات'], ['help', 'مساعد'], ['trades', 'صنايعية']].map(([id, l]) => `<button class="chip" type="button" data-action="jump" data-v="${id}">${ic(SVC[id])}${l}</button>`).join('')}</div>
-    ${sec('fix', 'إصلاحات بسعر ثابت', 'بتعرف السعر قبل ما تطلب، وأقرب صنايعي متاح بيوصلك.', `<div class="card qlist">${S.quick.map(x => `<button type="button" class="qrow" data-action="open-q" data-id="${x.id}"><span class="pop-ic sm tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(cat(x.category).name)} · ${esc(x.duration)} تقريباً</small></span><span class="qp">${money(x.price)}</span></button>`).join('')}</div>`)}
+    ${sec('fix', 'إصلاحات بسعر ثابت', 'بتعرف السعر قبل ما تطلب، وأقرب صنايعي متاح بيوصلك.', `<div class="card qlist">${S.quick.map(x => `<button type="button" class="qrow" data-action="open-q" data-id="${x.id}"><span class="pop-ic sm tn-${TRADE[x.category]?.tint || 'blue'}">${icSafe(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(cat(x.category).name)} · ${esc(x.duration)} تقريباً</small></span><span class="qp">${money(x.price)}</span></button>`).join('')}</div>`)}
     ${sec('help', 'مساعد بالساعة', 'إيد زيادة لأي حاجة في البيت.', `<div class="tgrid">${S.tasks.map(t => `<button class="tcard" type="button" data-action="open-task" data-id="${t.id}"><img src="${taskImg(t.id)}" alt="" loading="lazy"><span><b>${esc(t.name)}</b><small>من ${money(t.rate)} / ساعة</small></span></button>`).join('')}</div>`)}
     ${sec('trades', 'صنايعية', 'قارن التقييمات والأسعار، واطلب معاينة.', tradeGrid())}
   </div>`;
@@ -620,6 +623,7 @@ document.addEventListener('click', async e => {
     case 'tab': S.ui.stack = []; S.ui.sheet = null; return go({ tab: el.dataset.tab });
     case 'back': S.ui.stack.pop(); return go({});
     case 'retry': S.cache = {}; return render();
+    case 'reload': return location.reload();
     case 'refresh': invalidate('req:', 'admin:', 'crafter', 'reviews'); return render(true);
     case 'open-cat': S.ui.stack.push({ name: 'cat', id }); return go({});
     case 'open-crafter': S.ui.stack.push({ name: 'crafter', id }); return go({});
@@ -765,8 +769,8 @@ document.addEventListener('input', e => {
   const top = S.cache['crafters:top'];
   const cs = Array.isArray(top) ? top.filter(c => c.name.includes(v) || cat(c.category).name.includes(v) || (c.area || '').includes(v)) : [];
   const parts = [];
-  if (qs.length) parts.push(`<h2 class="res-h">إصلاحات بسعر ثابت</h2><div class="card qlist">${qs.map(x => `<button type="button" class="qrow" data-action="open-q" data-id="${x.id}"><span class="pop-ic sm tn-${TRADE[x.category]?.tint || 'blue'}">${ic(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(x.duration)} تقريباً</small></span><span class="qp">${money(x.price)}</span></button>`).join('')}</div>`);
-  if (ts.length) parts.push(`<h2 class="res-h">مساعد بالساعة</h2><div class="card qlist">${ts.map(x => `<button type="button" class="qrow" data-action="open-task" data-id="${x.id}"><span class="pop-ic sm tn-${x.tint}">${ic(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(x.description)}</small></span><span class="qp">${money(x.rate)}/س</span></button>`).join('')}</div>`);
+  if (qs.length) parts.push(`<h2 class="res-h">إصلاحات بسعر ثابت</h2><div class="card qlist">${qs.map(x => `<button type="button" class="qrow" data-action="open-q" data-id="${x.id}"><span class="pop-ic sm tn-${TRADE[x.category]?.tint || 'blue'}">${icSafe(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(x.duration)} تقريباً</small></span><span class="qp">${money(x.price)}</span></button>`).join('')}</div>`);
+  if (ts.length) parts.push(`<h2 class="res-h">مساعد بالساعة</h2><div class="card qlist">${ts.map(x => `<button type="button" class="qrow" data-action="open-task" data-id="${x.id}"><span class="pop-ic sm tn-${tint(x.tint)}">${icSafe(x.icon)}</span><span><b>${esc(x.name)}</b><small>${esc(x.description)}</small></span><span class="qp">${money(x.rate)}/س</span></button>`).join('')}</div>`);
   if (cs.length) parts.push(`<h2 class="res-h">صنايعية</h2>${cs.map(proCard).join('')}`);
   box.innerHTML = parts.length ? parts.join('') : '<div class="empty">مفيش نتايج. جرّب «حنفية» أو «نقل» أو «نقاش».</div>';
   box.hidden = false; body.hidden = true;
@@ -793,7 +797,7 @@ setInterval(() => {
     ]);
     S.cats = cats; S.quick = quick; S.tasks = tasks;
   } catch (e) {
-    app.innerHTML = `<div class="scroll"><div class="empty" style="margin-top:40px">مش قادرين نوصل لشطبلي دلوقتي.<br>اتأكد من النت وجرّب تاني.<br><button class="btn sm" type="button" onclick="location.reload()" style="margin-top:10px">جرّب تاني</button></div></div>`;
+    app.innerHTML = `<div class="scroll"><div class="empty" style="margin-top:40px">مش قادرين نوصل لشطبلي دلوقتي.<br>اتأكد من النت وجرّب تاني.<br><button class="btn sm" type="button" data-action="reload" style="margin-top:10px">جرّب تاني</button></div></div>`;
     return;
   }
   const { data: { session } } = await sb.auth.getSession();
@@ -804,3 +808,7 @@ setInterval(() => {
     setTimeout(() => loadSession(session), 0);   // don't call Supabase inside the callback
   });
 })();
+
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
