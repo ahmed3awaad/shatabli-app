@@ -1,0 +1,51 @@
+/* Real-app additions on top of the demo styles (styles.css). */
+
+/* Full screen on phones, framed on desktop */
+@media (max-width: 520px) {
+  body { padding: 0 !important; }
+  .page { padding-block: 0 !important; }
+  .app { max-width: none !important; max-height: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+}
+.app { padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
+.hero { margin-top: 0; }
+
+.splash { position: absolute; inset: 0; background: var(--navy); display: grid; place-items: center; z-index: 20; }
+.splash img { width: 78%; max-width: 300px; height: auto; }
+
+/* Auth */
+.auth { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.auth-top { background: var(--navy); padding: 28px 20px 30px; display: grid; place-items: center; border-radius: 0 0 28px 28px; }
+.auth-top img { width: 220px; max-width: 70%; height: auto; mix-blend-mode: lighten; }
+.auth-body { padding: 20px 16px 28px; display: flex; flex-direction: column; gap: 14px; }
+.auth-body h2 { font-size: 20px; }
+.role-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.role-pick button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; text-align: start; display: flex; flex-direction: column; gap: 2px; }
+.role-pick button b { font-size: 15px; }
+.role-pick button small { font-size: 12px; color: var(--muted); }
+.role-pick button[aria-pressed="true"] { border-color: var(--brand); box-shadow: 0 0 0 1.5px var(--brand); }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; }
+.center-note { text-align: center; font-size: 13px; color: var(--muted); }
+
+/* Loading */
+.loading { padding: 40px 0; text-align: center; color: var(--muted); font-size: 14px; }
+.spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: spin .8s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* Status banner for craftsman under review */
+.review-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 30px 10px; }
+.review-state .big { font-size: 44px; line-height: 1; }
+.review-state h2 { font-size: 19px; }
+.review-state p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; max-width: 32ch; }
+
+.phone-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--ok-soft); color: var(--ok); border-radius: 12px; padding: 8px 10px; font-size: 13px; font-weight: 700; }
+.phone-row a { color: inherit; font-variant-numeric: tabular-nums; direction: ltr; }
+.admin-tag { background: var(--tape); color: var(--tape-ink); }
+.textarea-sm { min-height: 64px !important; }
+.btn.danger { background: var(--bad-soft); color: var(--bad); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; }
+.kv span { color: var(--muted); }
+.rate-pick { display: flex; justify-content: center; gap: 6px; direction: ltr; }
+.rate-pick button { border: 0; background: none; font-size: 38px; line-height: 1; color: var(--line); padding: 0 2px; }
+.rate-pick button[aria-pressed="true"] { color: var(--tape); }
+.hero .loc-pill { max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
